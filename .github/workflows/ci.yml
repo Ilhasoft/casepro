@@ -40,10 +40,8 @@ jobs:
 
     - name: Run pre-test checks
       run: |
-        python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
-        python manage.py collectstatic --noinput
-        (! python manage.py compress --extension=".haml" --settings=casepro.settings_travis | grep 'Error') || exit 1
-        flake8
+        sudo apt-get install gettext
+        ./code_check.py --debug
 
     - name: Run tests
       run: |
@@ -55,5 +53,4 @@ jobs:
       if: success()
       uses: codecov/codecov-action@v1
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true

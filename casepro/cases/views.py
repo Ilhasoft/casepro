@@ -31,7 +31,6 @@ from casepro.utils import (
     JSONEncoder,
     datetime_to_microseconds,
     humanize_seconds,
-    json_encode,
     microseconds_to_datetime,
     month_range,
     str_to_bool,
@@ -51,10 +50,17 @@ class CaseSearchMixin(object):
         params = self.request.GET
         folder = CaseFolder[params["folder"]]
         assignee = params.get("assignee")
+        user_assignee = params.get("user_assignee")
         after = parse_iso8601(params.get("after"))
         before = parse_iso8601(params.get("before"))
 
-        return {"folder": folder, "assignee": assignee, "after": after, "before": before}
+        return {
+            "folder": folder,
+            "assignee": assignee,
+            "user_assignee": user_assignee,
+            "after": after,
+            "before": before,
+        }
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -95,9 +101,10 @@ class CaseCRUDL(SmartCRUDL):
             fields = Field.get_all(self.object.org, visible=True).order_by("label")
 
             # angular app requires context data in JSON format
-            context["context_data_json"] = json_encode(
-                {"all_labels": [l.as_json() for l in labels], "fields": [f.as_json() for f in fields]}
-            )
+            context["context_data_json"] = {
+                "all_labels": [l.as_json() for l in labels],
+                "fields": [f.as_json() for f in fields],
+            }
 
             context["can_update"] = can_update
             context["alert"] = self.request.GET.get("alert", None)
@@ -418,9 +425,7 @@ class PartnerCRUDL(SmartCRUDL):
             fields = Field.get_all(self.object.org, visible=True).order_by("label")
 
             # angular app requires context data in JSON format
-            context["context_data_json"] = json_encode(
-                {"partner": self.object.as_json(), "fields": [f.as_json() for f in fields]}
-            )
+            context["context_data_json"] = {"partner": self.object.as_json(), "fields": [f.as_json() for f in fields]}
 
             user_partner = self.request.user.get_partner(self.object.org)
 
@@ -539,13 +544,11 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         fields = Field.get_all(org, visible=True).order_by("label")
 
         # angular app requires context data in JSON format
-        context["context_data_json"] = json_encode(
-            {
-                "user": {"id": user.pk, "partner": partner.as_json() if partner else None},
-                "labels": [l.as_json() for l in labels],
-                "fields": [f.as_json() for f in fields],
-            }
-        )
+        context["context_data_json"] = {
+            "user": {"id": user.pk, "partner": partner.as_json() if partner else None},
+            "labels": [l.as_json() for l in labels],
+            "fields": [f.as_json() for f in fields],
+        }
 
         context["banner_text"] = org.get_banner_text()
         context["folder"] = self.folder.name

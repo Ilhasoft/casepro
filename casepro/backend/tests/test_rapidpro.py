@@ -6,8 +6,8 @@ from unittest.mock import call, patch
 import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
-from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import (
+    Broadcast as TembaBroadcast,
     Contact as TembaContact,
     Field as TembaField,
     Flow as TembaFlow,
@@ -947,7 +947,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertIsInstance(kwargs["messages"], list)
         self.assertEqual(set(kwargs["messages"]), {0, 1, 2, 3, 4})
 
-    @patch("dash.orgs.models.TembaClient.bulk_archive_contacts")
+    @patch("dash.orgs.models.TembaClient.bulk_archive_contact_messages")
     def test_archive_contact_messages(self, mock_archive_contacts):
         self.backend.archive_contact_messages(self.unicef, self.bob)
 
@@ -1061,7 +1061,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
 
         mock_create_flow_start.assert_called_once_with(
-            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"}
+            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, params={"foo": "bar"}
         )
 
     def test_get_url_patterns(self):

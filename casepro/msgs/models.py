@@ -9,7 +9,7 @@ from django_redis import get_redis_connection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Index, Q
+from django.db.models import Index, Prefetch, Q
 from django.utils.timesince import timesince
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -79,7 +79,7 @@ class Label(models.Model):
         return org.labels.filter(is_active=True)
 
     def update_tests(self, tests):
-        from casepro.rules.models import Rule, LabelAction
+        from casepro.rules.models import LabelAction, Rule
 
         if tests:
             if self.rule:
@@ -236,7 +236,9 @@ class FAQ(models.Model):
         if text:
             queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
-        queryset = queryset.prefetch_related("labels", "parent__labels")
+        queryset = queryset.prefetch_related(
+            Prefetch("labels", Label.objects.filter(is_active=True).order_by("id")), "parent__labels"
+        )
 
         return queryset.order_by("question")
 
@@ -458,7 +460,9 @@ class Message(models.Model):
 
         # handle views that don't require filtering by any labels
         if folder == MessageFolder.unlabelled:
-            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering).filter(**lbl_filtering)
+            return (
+                msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering).filter(**lbl_filtering)
+            )
         if all_label_access and not label_id:
             if folder == MessageFolder.inbox:
                 return msgs.filter(has_labels=True).filter(**msg_filtering).filter(**lbl_filtering)
